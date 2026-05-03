@@ -1,6 +1,8 @@
 __pycache__/
 *.pyc
 
+notes.db
+
 # Môi trường ảo (virtual environment)
 env/
 venv/
