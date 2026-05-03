@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 
 notes.db
+system_logs.txt
 
 # Môi trường ảo (virtual environment)
 env/
