@@ -1,21 +1,25 @@
 from __future__ import annotations
+import os
 from datetime import datetime
 from typing import Any
 import customtkinter as ctk
 from tkinter import messagebox
 import sqlite3
+from dotenv import load_dotenv
 
 import database
 import keylogger
 
-APP_TITLE = "Papa Note"
+load_dotenv()
+APP_TITLE = os.getenv("APP_TITLE", "Papa Note")
+WINDOW_SIZE = os.getenv("WINDOW_SIZE", "1100x700")
 
 class PapaNoteApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
         
         self.title(APP_TITLE)
-        self.geometry("1100x700")
+        self.geometry(WINDOW_SIZE)
         
         self.current_user_id: int | None = None
         self.current_note_id: int | None = None
@@ -35,32 +39,64 @@ class PapaNoteApp(ctk.CTk):
 
     def show_login_screen(self):
         self._clear_container()
-        login_frame = ctk.CTkFrame(self.container, width=400, height=500, corner_radius=20)
+
+        bg_frame = ctk.CTkFrame(self.container, fg_color="#0f172a", corner_radius=0)
+        bg_frame.pack(fill="both", expand=True)
+
+        login_frame = ctk.CTkFrame(bg_frame, width=450, height=580, corner_radius=20, 
+                                   fg_color="#1e293b", border_width=1, border_color="#334155")
         login_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        ctk.CTkLabel(login_frame, text="Welcome Back", font=("Segoe UI", 28, "bold")).pack(pady=(40, 20))
-        
-        self.username_entry = ctk.CTkEntry(login_frame, width=300, height=45, placeholder_text="Username")
-        self.username_entry.pack(pady=10)
-        
-        self.password_entry = ctk.CTkEntry(login_frame, width=300, height=45, placeholder_text="Password", show="*")
-        self.password_entry.pack(pady=10)
+        ctk.CTkLabel(login_frame, text="📝", font=("Segoe UI", 55)).pack(pady=(45, 10))
 
-        ctk.CTkButton(login_frame, text="Login", width=300, height=45, command=self.handle_login).pack(pady=(20, 10))
-        ctk.CTkButton(login_frame, text="Create New Account", fg_color="transparent", border_width=1, command=self.show_register_screen).pack()
+        ctk.CTkLabel(login_frame, text="Welcome Back", font=("Segoe UI", 32, "bold"), text_color="#f8fafc").pack(pady=(0, 5))
+        ctk.CTkLabel(login_frame, text="Sign in to continue to Papa Note", font=("Segoe UI", 14), text_color="#94a3b8").pack(pady=(0, 35))
+
+        self.username_entry = ctk.CTkEntry(login_frame, width=320, height=50, placeholder_text="Username",
+                                           font=("Segoe UI", 14), corner_radius=10, 
+                                           fg_color="#0f172a", border_color="#334155", text_color="#f8fafc")
+        self.username_entry.pack(pady=(0, 15))
+        
+        self.password_entry = ctk.CTkEntry(login_frame, width=320, height=50, placeholder_text="Password", show="•",
+                                           font=("Segoe UI", 14), corner_radius=10, 
+                                           fg_color="#0f172a", border_color="#334155", text_color="#f8fafc")
+        self.password_entry.pack(pady=(0, 25))
+
+        ctk.CTkButton(login_frame, text="Login", width=320, height=50, font=("Segoe UI", 16, "bold"),
+                      corner_radius=10, fg_color="#2563eb", hover_color="#1d4ed8", 
+                      command=self.handle_login).pack(pady=(10, 15))
+
+        ctk.CTkLabel(login_frame, text="Don't have an account?", font=("Segoe UI", 13), text_color="#94a3b8").pack(pady=(15, 0))
+
+        ctk.CTkButton(login_frame, text="Create New Account", width=320, height=40, font=("Segoe UI", 14, "bold"),
+                      fg_color="transparent", text_color="#38bdf8", hover_color="#0f172a", border_width=0,
+                      command=self.show_register_screen).pack(pady=(0, 20))
+
 
     def show_register_screen(self):
         self._clear_container()
-        reg_frame = ctk.CTkFrame(self.container, width=400, height=500, corner_radius=20)
+
+        bg_frame = ctk.CTkFrame(self.container, fg_color="#0f172a", corner_radius=0)
+        bg_frame.pack(fill="both", expand=True)
+
+        reg_frame = ctk.CTkFrame(bg_frame, width=450, height=580, corner_radius=20, 
+                                 fg_color="#1e293b", border_width=1, border_color="#334155")
         reg_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        ctk.CTkLabel(reg_frame, text="Register", font=("Segoe UI", 28, "bold")).pack(pady=(40, 20))
+        ctk.CTkLabel(reg_frame, text="🚀", font=("Segoe UI", 55)).pack(pady=(45, 10))
+
+        ctk.CTkLabel(reg_frame, text="Create Account", font=("Segoe UI", 32, "bold"), text_color="#f8fafc").pack(pady=(0, 5))
+        ctk.CTkLabel(reg_frame, text="Join Papa Note to secure your ideas", font=("Segoe UI", 14), text_color="#94a3b8").pack(pady=(0, 35))
         
-        reg_user = ctk.CTkEntry(reg_frame, width=300, height=45, placeholder_text="Choose Username")
-        reg_user.pack(pady=10)
+        reg_user = ctk.CTkEntry(reg_frame, width=320, height=50, placeholder_text="Choose Username",
+                                font=("Segoe UI", 14), corner_radius=10, 
+                                fg_color="#0f172a", border_color="#334155", text_color="#f8fafc")
+        reg_user.pack(pady=(0, 15))
         
-        reg_pass = ctk.CTkEntry(reg_frame, width=300, height=45, placeholder_text="Choose Password", show="*")
-        reg_pass.pack(pady=10)
+        reg_pass = ctk.CTkEntry(reg_frame, width=320, height=50, placeholder_text="Choose Password", show="•",
+                                font=("Segoe UI", 14), corner_radius=10, 
+                                fg_color="#0f172a", border_color="#334155", text_color="#f8fafc")
+        reg_pass.pack(pady=(0, 25))
 
         def do_register():
             u, p = reg_user.get(), reg_pass.get()
@@ -74,8 +110,15 @@ class PapaNoteApp(ctk.CTk):
             else:
                 messagebox.showwarning("Warning", "Fields cannot be empty")
 
-        ctk.CTkButton(reg_frame, text="Sign Up", width=300, height=45, fg_color="#10b981", command=do_register).pack(pady=(20, 10))
-        ctk.CTkButton(reg_frame, text="Back to Login", fg_color="transparent", command=self.show_login_screen).pack()
+        ctk.CTkButton(reg_frame, text="Sign Up", width=320, height=50, font=("Segoe UI", 16, "bold"),
+                      corner_radius=10, fg_color="#10b981", hover_color="#059669", 
+                      command=do_register).pack(pady=(10, 15))
+
+        ctk.CTkLabel(reg_frame, text="Already have an account?", font=("Segoe UI", 13), text_color="#94a3b8").pack(pady=(15, 0))
+
+        ctk.CTkButton(reg_frame, text="Back to Login", width=320, height=40, font=("Segoe UI", 14, "bold"),
+                      fg_color="transparent", text_color="#38bdf8", hover_color="#0f172a", border_width=0,
+                      command=self.show_login_screen).pack(pady=(0, 20))
 
     def handle_login(self):
         u, p = self.username_entry.get(), self.password_entry.get()
@@ -105,7 +148,7 @@ class PapaNoteApp(ctk.CTk):
 
         brand_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         brand_frame.grid(row=0, column=0, padx=20, pady=(30, 10), sticky="ew")
-        ctk.CTkLabel(brand_frame, text="📝 Papa Note", font=("Segoe UI", 24, "bold"), text_color="#f9fafb").pack(side="left")
+        ctk.CTkLabel(brand_frame, text=f"📝 {APP_TITLE}", font=("Segoe UI", 24, "bold"), text_color="#f9fafb").pack(side="left")
 
         self.new_button = ctk.CTkButton(self.sidebar, text="+ New Note", font=("Segoe UI", 14, "bold"), fg_color="#2563eb", height=45, command=self.new_note)
         self.new_button.grid(row=1, column=0, padx=18, pady=10, sticky="ew")

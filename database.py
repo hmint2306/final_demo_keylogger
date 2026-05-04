@@ -1,7 +1,12 @@
 import sqlite3
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
-DB_PATH = Path(__file__).with_name("notes.db")
+load_dotenv()
+
+db_name = os.getenv("DB_NAME", "notes.db")
+DB_PATH = Path(__file__).with_name(db_name)
 
 def init_db() -> None:
     with sqlite3.connect(DB_PATH) as connection:
