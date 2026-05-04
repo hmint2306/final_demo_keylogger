@@ -5,12 +5,34 @@
 cp .env.example .env
 ```
 
-3. Chạy lệnh cài đặt thư viện
+3. Tạo môi trường ảo
+```bash
+python -m venv .venv
+```
+
+4. Kích hoạt môi trường ảo
+## Windows
+```bash
+(PowerShell): .venv\Scripts\Activate.ps1Windows 
+(cmd.exe): .venv\Scripts\activate.batmacOS
+```
+
+## Linux 
+```bash
+Linux source .venv/bin/activate
+```
+
+5. Tắt môi trường ảo
+```bash
+deactivate
+```
+
+6. Chạy lệnh cài đặt thư viện
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Chạy hệ thống
+7. Chạy hệ thống
 ```bash
 python main.py
 ```
