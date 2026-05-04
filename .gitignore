@@ -4,6 +4,9 @@ __pycache__/
 notes.db
 system_logs.txt
 tempCodeRunnerFile.py
+main.spec
+build
+
 # Môi trường ảo (virtual environment)
 env/
 venv/
