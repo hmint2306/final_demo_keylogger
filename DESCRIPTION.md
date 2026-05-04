@@ -53,7 +53,7 @@ Dự án cung cấp một mục **"Security Center"** bên trong ứng dụng đ
 
 ## 5. Công nghệ sử dụng
 - **Ngôn ngữ:** Python 3.10+.
-- **Thư viện UI:** Tkinter (đơn giản) hoặc CustomTkinter (hiện đại).
+- **Thư viện UI:** CustomTkinter.
 - **Thư viện Keylogger:** `pynput` hoặc `ctypes` (tương tác trực tiếp Win32 API).
 - **Database:** SQLite3.
 - **Đóng gói:** PyInstaller.

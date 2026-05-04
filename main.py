@@ -193,6 +193,7 @@ class PapaNoteApp(ctk.CTk):
         
         self.title_entry = ctk.CTkEntry(top_bar, placeholder_text="Enter note title...", font=("Segoe UI", 26, "bold"), fg_color="transparent", border_width=0, text_color="#f3f4f6")
         self.title_entry.pack(side="left", fill="x", expand=True)
+        self.title_entry.bind("<FocusIn>", lambda e: setattr(self, 'active_input_target', self.title_entry))
 
         ctk.CTkButton(top_bar, text="Save", width=100, fg_color="#10b981", command=self.save_note).pack(side="right", padx=5)
         ctk.CTkButton(top_bar, text="Delete", width=80, fg_color="#374151", hover_color="#ef4444", command=self.delete_note).pack(side="right", padx=5)
@@ -201,6 +202,9 @@ class PapaNoteApp(ctk.CTk):
         editor_card.grid(row=1, column=0, padx=28, pady=10, sticky="nsew")
         self.content_text = ctk.CTkTextbox(editor_card, font=("Segoe UI", 15), fg_color="transparent", text_color="#d1d5db", padx=20, pady=20, undo=True)
         self.content_text.pack(fill="both", expand=True)
+        self.content_text.bind("<FocusIn>", lambda e: setattr(self, 'active_input_target', self.content_text))
+
+        self.active_input_target = self.content_text
 
         self._build_security_center()
 
@@ -283,25 +287,46 @@ class PapaNoteApp(ctk.CTk):
         self.status_label.grid(row=4, column=0, padx=28, pady=(0, 10), sticky="w")
 
     def _virtual_input(self, key: str) -> None:
-        if key == 'Space':
-            self.content_text.insert("insert", " ")
-        elif key == 'Backspace':
-            current_pos = self.content_text.index("insert")
-            if current_pos != "1.0":
-                self.content_text.delete(f"{current_pos}-1c", current_pos)
-        elif key == 'Enter':
-            self.content_text.insert("insert", "\n")
-        elif key == 'Tab':
-            self.content_text.insert("insert", "    ")
-        elif key == 'Caps':
-            self.caps_lock_active = not self.caps_lock_active
-            self._render_keyboard()
-            return 
-        elif key == 'Shift':
-            pass 
+        target = self.active_input_target
+        if not target:
+            target = self.content_text
+
+        if isinstance(target, ctk.CTkEntry):
+            if key == 'Space':
+                target.insert("insert", " ")
+            elif key == 'Backspace':
+                pos = target.index("insert")
+                if pos > 0:
+                    target.delete(pos - 1, pos)
+            elif key in ('Enter', 'Tab', 'Shift'):
+                pass
+            elif key == 'Caps':
+                self.caps_lock_active = not self.caps_lock_active
+                self._render_keyboard()
+                return
+            else:
+                char = key.upper() if self.caps_lock_active and len(key) == 1 and key.isalpha() else key
+                target.insert("insert", char)
         else:
-            char = key.upper() if self.caps_lock_active and key.isalpha() else key
-            self.content_text.insert("insert", char)
+            if key == 'Space':
+                target.insert("insert", " ")
+            elif key == 'Backspace':
+                pos = target.index("insert")
+                if pos != "1.0":
+                    target.delete(f"{pos}-1c", pos)
+            elif key == 'Enter':
+                target.insert("insert", "\n")
+            elif key == 'Tab':
+                target.insert("insert", "    ")
+            elif key == 'Shift':
+                pass
+            elif key == 'Caps':
+                self.caps_lock_active = not self.caps_lock_active
+                self._render_keyboard()
+                return
+            else:
+                char = key.upper() if self.caps_lock_active and len(key) == 1 and key.isalpha() else key
+                target.insert("insert", char)
             
         self.status_label.configure(text=f"Secure Input Action: [{key}]", text_color="#10b981")
 
