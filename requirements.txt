@@ -1,3 +1,4 @@
 pynput
 customtkinter
 python-dotenv
+Pillow

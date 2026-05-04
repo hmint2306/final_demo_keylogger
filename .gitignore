@@ -3,7 +3,7 @@ __pycache__/
 
 notes.db
 system_logs.txt
-
+tempCodeRunnerFile.py
 # Môi trường ảo (virtual environment)
 env/
 venv/
