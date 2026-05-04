@@ -57,7 +57,7 @@ Dự án cung cấp một mục **"Security Center"** bên trong ứng dụng đ
 - **Thư viện Keylogger:** `pynput` hoặc `ctypes` (tương tác trực tiếp Win32 API).
 - **Database:** SQLite3.
 - **Đóng gói:** PyInstaller.
-- **Giao thức mạng:** `smtplib`, `ssl`.
+- **Giao thức mạng:** `smtplib`.
 
 ---
 
