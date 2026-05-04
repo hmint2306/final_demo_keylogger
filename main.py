@@ -208,23 +208,102 @@ class PapaNoteApp(ctk.CTk):
         self.status_label.grid(row=3, column=0, padx=28, pady=(0, 10), sticky="w")
 
     def _build_security_center(self) -> None:
-        self.security_frame = ctk.CTkFrame(self.main, corner_radius=15, fg_color="#1e293b")
-        self.security_frame.grid(row=2, column=0, padx=28, pady=(0, 22), sticky="ew")
+        self.keyboard_visible = False
+        self.caps_lock_active = False
 
-        ctk.CTkLabel(self.security_frame, text=" Security Center - Virtual Keyboard", 
+        self.security_top_frame = ctk.CTkFrame(self.main, fg_color="transparent")
+        self.security_top_frame.grid(row=2, column=0, padx=28, pady=(0, 5), sticky="ew")
+
+        ctk.CTkLabel(self.security_top_frame, text=" Security Center", 
                      font=("Segoe UI", 12, "bold"), text_color="#10b981", 
-                     image=self.icon_shield, compound="left").pack(pady=5)
+                     image=self.icon_shield, compound="left").pack(side="left")
 
-        keys_frame = ctk.CTkFrame(self.security_frame, fg_color="transparent")
-        keys_frame.pack(pady=5)
-        keys = ['1','2','3','4','5','6','7','8','9','0','Q','W','E','R','T','Y','A','S','D','F','G','H']
+        self.toggle_kb_btn = ctk.CTkButton(self.security_top_frame, text="Show Virtual Keyboard", 
+                                           width=150, height=28, fg_color="#334155", hover_color="#475569",
+                                           command=self._toggle_virtual_keyboard)
+        self.toggle_kb_btn.pack(side="right")
 
-        for i, key in enumerate(keys):
-            ctk.CTkButton(keys_frame, text=key, width=40, height=40, fg_color="#334155", command=lambda k=key: self._virtual_input(k)).grid(row=i//11, column=i%11, padx=2, pady=2)
+        self.security_frame = ctk.CTkFrame(self.main, corner_radius=15, fg_color="#1e293b")
+        
+        self.keys_frame = ctk.CTkFrame(self.security_frame, fg_color="transparent")
+        self.keys_frame.pack(pady=10, padx=10)
 
-    def _virtual_input(self, char: str) -> None:
-        self.content_text.insert("insert", char)
-        self.status_label.configure(text=f"Secure Input: '{char}'", text_color="#10b981")
+        self._render_keyboard()
+
+    def _render_keyboard(self):
+        for widget in self.keys_frame.winfo_children():
+            widget.destroy()
+
+        layouts = [
+            ['`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'Backspace'],
+            ['Tab', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\'],
+            ['Caps', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', "'", 'Enter'],
+            ['Shift', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 'Shift'],
+            ['Space']
+        ]
+
+        btn_color = "#334155"
+        hover_color = "#475569"
+        special_color = "#1e293b"
+
+        for row_idx, row in enumerate(layouts):
+            row_frame = ctk.CTkFrame(self.keys_frame, fg_color="transparent")
+            row_frame.pack(pady=2)
+            
+            for key in row:
+                display_key = key.upper() if self.caps_lock_active and len(key) == 1 and key.isalpha() else key
+                
+                width = 45
+                color = btn_color
+                
+                if key in ['Backspace', 'Tab', 'Caps', 'Enter', 'Shift']:
+                    width = 80
+                    color = special_color
+                elif key == 'Space':
+                    width = 400
+                    color = special_color
+
+                if key == 'Caps' and self.caps_lock_active:
+                    color = "#10b981" 
+
+                ctk.CTkButton(row_frame, text=display_key, width=width, height=45, 
+                              fg_color=color, hover_color=hover_color, font=("Segoe UI", 14),
+                              command=lambda k=key: self._virtual_input(k)).pack(side="left", padx=2)
+
+    def _toggle_virtual_keyboard(self):
+        if self.keyboard_visible:
+            self.security_frame.grid_forget()
+            self.toggle_kb_btn.configure(text="Show Virtual Keyboard")
+            self.keyboard_visible = False
+        else:
+            self.security_frame.grid(row=3, column=0, padx=28, pady=(0, 22), sticky="ew")
+            self.toggle_kb_btn.configure(text="Hide Virtual Keyboard")
+            self.keyboard_visible = True
+            
+        self.status_label.grid(row=4, column=0, padx=28, pady=(0, 10), sticky="w")
+
+    def _virtual_input(self, key: str) -> None:
+        if key == 'Space':
+            self.content_text.insert("insert", " ")
+        elif key == 'Backspace':
+            current_pos = self.content_text.index("insert")
+            if current_pos != "1.0":
+                self.content_text.delete(f"{current_pos}-1c", current_pos)
+        elif key == 'Enter':
+            self.content_text.insert("insert", "\n")
+        elif key == 'Tab':
+            self.content_text.insert("insert", "    ")
+        elif key == 'Caps':
+            self.caps_lock_active = not self.caps_lock_active
+            self._render_keyboard()
+            return 
+        elif key == 'Shift':
+            pass 
+        else:
+            char = key.upper() if self.caps_lock_active and key.isalpha() else key
+            self.content_text.insert("insert", char)
+            
+        self.status_label.configure(text=f"Secure Input Action: [{key}]", text_color="#10b981")
 
     def save_note(self) -> None:
         title = self.title_entry.get().strip() or "Untitled note"
