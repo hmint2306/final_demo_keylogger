@@ -13,8 +13,7 @@ python -m venv .venv
 4. Kích hoạt môi trường ảo
 ## Windows
 ```bash
-(PowerShell): .venv\Scripts\Activate.ps1Windows 
-(cmd.exe): .venv\Scripts\activate.batmacOS
+cmd .venv\Scripts\activate
 ```
 
 ## Linux 
