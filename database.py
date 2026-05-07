@@ -79,3 +79,20 @@ def get_note(note_id):
         conn.row_factory = sqlite3.Row
         row = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
         return dict(row) if row else None
+    
+def get_user_info(user_id):
+    """Hàm lấy thông tin username hiện tại để hiển thị lên Form"""
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("SELECT username, password FROM users WHERE id = ?", (user_id,)).fetchone()
+        return dict(row) if row else None
+
+def update_user_info(user_id, new_username, new_password):
+    """Hàm lưu thông tin username và password mới vào SQLite"""
+    with sqlite3.connect(DB_PATH) as conn:
+        try:
+            conn.execute("UPDATE users SET username = ?, password = ? WHERE id = ?", (new_username, new_password, user_id))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False

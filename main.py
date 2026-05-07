@@ -153,6 +153,40 @@ class PapaNoteApp(ctk.CTk):
         else:
             messagebox.showerror("Login Failed", "Invalid username or password")
 
+    def show_profile_screen(self):
+        profile_window = ctk.CTkToplevel(self)
+        profile_window.title("Change Profile")
+        profile_window.geometry("400x350")
+        profile_window.attributes("-topmost", True)
+        
+        user_info = database.get_user_info(self.current_user_id)
+        current_username = user_info["username"] if user_info else ""
+        
+        ctk.CTkLabel(profile_window, text="Update Profile", font=("Segoe UI", 24, "bold")).pack(pady=(20, 20))
+        
+        user_entry = ctk.CTkEntry(profile_window, width=300, height=45, placeholder_text="New Username")
+        user_entry.pack(pady=10)
+
+        user_entry.insert(0, current_username)
+        
+        pass_entry = ctk.CTkEntry(profile_window, width=300, height=45, placeholder_text="New Password", show="•")
+        pass_entry.pack(pady=10)
+        
+        def do_update():
+            u, p = user_entry.get(), pass_entry.get()
+            if u and p:
+                success = database.update_user_info(self.current_user_id, u, p)
+                if success:
+                    messagebox.showinfo("Success", "Profile updated successfully!", parent=profile_window)
+                    profile_window.destroy()
+                else:
+                    messagebox.showerror("Error", "Username already exists!", parent=profile_window)
+            else:
+                messagebox.showwarning("Warning", "Fields cannot be empty", parent=profile_window)
+                
+        ctk.CTkButton(profile_window, text="Save Changes", width=300, height=45, 
+                      fg_color="#10b981", hover_color="#059669", command=do_update).pack(pady=20)
+
     def show_main_app(self):
         self._clear_container()
         self.container.grid_columnconfigure(0, weight=0)
@@ -191,7 +225,11 @@ class PapaNoteApp(ctk.CTk):
         self.note_count_label = ctk.CTkLabel(footer_frame, text="0 items", font=("Segoe UI", 12), text_color="#6b7280")
         self.note_count_label.pack(side="left")
 
-        ctk.CTkButton(self.sidebar, text="Logout", fg_color="#ef4444", height=35, command=self.show_login_screen).grid(row=5, column=0, padx=18, pady=(10, 20), sticky="ew")
+        ctk.CTkButton(self.sidebar, text="Change Profile", fg_color="#7fcdfe", height=35, 
+                      command=self.show_profile_screen).grid(row=5, column=0, padx=18, pady=(5, 5), sticky="ew")
+
+        ctk.CTkButton(self.sidebar, text="Logout", fg_color="#ef4444", height=35, 
+                      command=self.show_login_screen).grid(row=6, column=0, padx=18, pady=(5, 20), sticky="ew")
 
     def _build_main_editor(self):
         self.main = ctk.CTkFrame(self.container, corner_radius=0, fg_color="#0b1220")
