@@ -1,5 +1,4 @@
 import os
-import ctypes
 import platform
 import subprocess
 import smtplib
@@ -31,6 +30,7 @@ def get_active_window_title() -> str:
     
     try:
         if current_os == "Windows":
+            import ctypes
             hwnd = ctypes.windll.user32.GetForegroundWindow()
             length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
             buff = ctypes.create_unicode_buffer(length + 1)
